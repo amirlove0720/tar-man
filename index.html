@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+  <meta name="theme-color" content="#0b0d12">
+  <title>یار من — AI محلی</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      background: #0b0d12;
+      color: #f4f5f7;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        sans-serif;
+    }
+
+    .app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding:
+        calc(env(safe-area-inset-top) + 18px)
+        18px 14px;
+      border-bottom: 1px solid #20242d;
+      background: rgba(11,13,18,.94);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .status {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #8e96a6;
+    }
+
+    .status.ready {
+      color: #57d68d;
+    }
+
+    .status.error {
+      color: #ff7777;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 14px 130px;
+    }
+
+    .welcome {
+      max-width: 620px;
+      margin: 20vh auto 0;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+
+    .welcome h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+    }
+
+    .welcome p {
+      color: #929aaa;
+      line-height: 1.8;
+    }
+
+    .message {
+      max-width: 88%;
+      margin: 10px 0;
+      padding: 13px 15px;
+      border-radius: 18px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .user {
+      margin-right: auto;
+      background: #246bfe;
+      border-bottom-right-radius: 5px;
+    }
+
+    .assistant {
+      margin-left: auto;
+      background: #171b23;
+      border: 1px solid #252a35;
+      border-bottom-left-radius: 5px;
+    }
+
+    .typing {
+      color: #8992a2;
+      font-size: 13px;
+      padding: 8px 4px;
+    }
+
+    .composer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding:
+        10px 12px
+        calc(env(safe-area-inset-bottom) + 12px);
+      background: rgba(11,13,18,.94);
+      backdrop-filter: blur(22px);
+      border-top: 1px solid #20242d;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    textarea {
+      flex: 1;
+      resize: none;
+      min-height: 48px;
+      max-height: 140px;
+      border: 1px solid #292f3a;
+      border-radius: 17px;
+      background: #151820;
+      color: white;
+      padding: 13px 15px;
+      outline: none;
+      font: inherit;
+    }
+
+    textarea:focus {
+      border-color: #3d75ff;
+    }
+
+    button {
+      border: 0;
+      border-radius: 15px;
+      background: #246bfe;
+      color: white;
+      min-width: 48px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    button:disabled {
+      opacity: .45;
+    }
+
+    .controls {
+      display: flex;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .small {
+      flex: 1;
+      height: 34px;
+      min-width: 0;
+      font-size: 12px;
+      background: #151820;
+      border: 1px solid #252a35;
+      color: #aeb5c2;
+    }
+
+    .progress {
+      display: none;
+      margin-top: 8px;
+      height: 4px;
+      background: #222631;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: #246bfe;
+      transition: width .2s;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="title">🤖 یار من</div>
+    <div id="status" class="status">
+      مدل هنوز بارگذاری نشده است
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="bar" id="bar"></div>
+    </div>
+  </header>
+
+  <main id="messages">
+
+    <div class="welcome" id="welcome">
+      <div class="logo">🧠</div>
+
+      <h1>یار من</h1>
+
+      <p>
+        هوش مصنوعی محلی روی آیفون شما.
+        <br>
+        پیام‌ها برای اجرای مدل به سرویس API پولی ارسال نمی‌شوند.
+      </p>
+
+      <button id="loadBtn" style="height:52px;padding:0 25px">
+        بارگذاری هوش مصنوعی
+      </button>
+    </div>
+
+  </main>
+
+  <div class="composer">
+
+    <div class="row">
+      <textarea
+        id="input"
+        placeholder="پیامت را بنویس..."
+        rows="1"
+        disabled></textarea>
+
+      <button id="send" disabled>➤</button>
+    </div>
+
+    <div class="controls">
+      <button class="small" id="clear">
+        🗑 پاک کردن
+      </button>
+
+      <button class="small" id="voice">
+        🎙️ صدا
+      </button>
+
+      <button class="small" id="memory">
+        💾 حافظه
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module">
+
+import {
+  CreateMLCEngine
+} from "https://esm.run/@mlc-ai/web-llm";
+
+const MODEL =
+  "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
+
+let engine = null;
+let busy = false;
+
+const $ = id => document.getElementById(id);
+
+const messagesEl = $("messages");
+const welcomeEl = $("welcome");
+const statusEl = $("status");
+const loadBtn = $("loadBtn");
+const input = $("input");
+const send = $("send");
+const clearBtn = $("clear");
+const voiceBtn = $("voice");
+const memoryBtn = $("memory");
+const progress = $("progress");
+const bar = $("bar");
+
+let conversation =
+  JSON.parse(
+    localStorage.getItem("yar-man-chat") || "[]"
+  );
+
+function saveConversation() {
+  localStorage.setItem(
+    "yar-man-chat",
+    JSON.stringify(conversation)
+  );
+}
+
+function addMessage(role, text, save = true) {
+
+  if (welcomeEl) {
+    welcomeEl.remove();
+  }
+
+  const div = document.createElement("div");
+
+  div.className =
+    "message " +
+    (role === "user" ? "user" : "assistant");
+
+  div.textContent = text;
+
+  messagesEl.appendChild(div);
+
+  messagesEl.scrollTop =
+    messagesEl.scrollHeight;
+
+  if (save) {
+    conversation.push({ role, content: text });
+    saveConversation();
+  }
+
+  return div;
+}
+
+function showHistory() {
+
+  if (!conversation.length) return;
+
+  if (welcomeEl) {
+    welcomeEl.remove();
+  }
+
+  for (const msg of conversation) {
+    addMessage(
+      msg.role,
+      msg.content,
+      false
+    );
+  }
+}
+
+async function loadModel() {
+
+  if (engine) return;
+
+  loadBtn.disabled = true;
+  progress.style.display = "block";
+
+  statusEl.textContent =
+    "در حال دانلود و آماده‌سازی مدل...";
+
+  try {
+
+    engine = await CreateMLCEngine(
+      MODEL,
+      {
+        initProgressCallback: p => {
+
+          const value =
+            Math.round(
+              (p.progress || 0) * 100
+            );
+
+          bar.style.width = value + "%";
+
+          statusEl.textContent =
+            p.text ||
+            `آماده‌سازی مدل: ${value}%`;
+        }
+      }
+    );
+
+    statusEl.textContent =
+      "● آماده — هوش مصنوعی محلی فعال است";
+
+    statusEl.className =
+      "status ready";
+
+    input.disabled = false;
+    send.disabled = false;
+
+    loadBtn.remove();
+
+    showHistory();
+
+    input.focus();
+
+  } catch (err) {
+
+    console.error(err);
+
+    statusEl.textContent =
+      "خطا در اجرای مدل: " + err.message;
+
+    statusEl.className =
+      "status error";
+
+    loadBtn.disabled = false;
+  }
+}
+
+async function sendMessage() {
+
+  if (!engine || busy) return;
+
+  const text =
+    input.value.trim();
+
+  if (!text) return;
+
+  input.value = "";
+  input.style.height = "48px";
+
+  addMessage("user", text);
+
+  busy = true;
+  send.disabled = true;
+  input.disabled = true;
+
+  const typing =
+    document.createElement("div");
+
+  typing.className = "typing";
+  typing.textContent = "در حال فکر کردن...";
+
+  messagesEl.appendChild(typing);
+
+  messagesEl.scrollTop =
+    messagesEl.scrollHeight;
+
+  try {
+
+    const messages = [
+
+      {
+        role: "system",
+        content:
+          "تو «یار من» هستی؛ یک دستیار شخصی فارسی‌زبان. " +
+          "پاسخ‌ها را واضح، مفید و طبیعی بده. " +
+          "اگر کاربر فارسی صحبت کرد فارسی پاسخ بده."
+      },
+
+      ...conversation
+    ];
+
+    const reply =
+      await engine.chat.completions.create({
+        messages,
+        temperature: 0.7,
+        max_tokens: 700
+      });
+
+    typing.remove();
+
+    const answer =
+      reply.choices?.[0]?.message?.content ||
+      "نتوانستم پاسخی تولید کنم.";
+
+    addMessage(
+      "assistant",
+      answer
+    );
+
+  } catch (err) {
+
+    typing.remove();
+
+    addMessage(
+      "assistant",
+      "خطا هنگام تولید پاسخ:\n" +
+      err.message,
+      false
+    );
+
+  } finally {
+
+    busy = false;
+    send.disabled = false;
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+loadBtn.addEventListener(
+  "click",
+  loadModel
+);
+
+send.addEventListener(
+  "click",
+  sendMessage
+);
+
+input.addEventListener(
+  "keydown",
+  e => {
+
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey
+    ) {
+
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+);
+
+input.addEventListener(
+  "input",
+  () => {
+
+    input.style.height = "48px";
+
+    input.style.height =
+      Math.min(
+        input.scrollHeight,
+        140
+      ) + "px";
+  }
+);
+
+clearBtn.addEventListener(
+  "click",
+  () => {
+
+    conversation = [];
+
+    localStorage.removeItem(
+      "yar-man-chat"
+    );
+
+    messagesEl.innerHTML = "";
+
+    const div =
+      document.createElement("div");
+
+    div.className = "welcome";
+
+    div.innerHTML = `
+      <div class="logo">🧠</div>
+      <h1>چت جدید</h1>
+      <p>تاریخچه پاک شد.</p>
+    `;
+
+    messagesEl.appendChild(div);
+  }
+);
+
+memoryBtn.addEventListener(
+  "click",
+  () => {
+
+    alert(
+      "حافظه محلی در مرحله بعد اضافه می‌شود. " +
+      "فعلاً تاریخچه گفتگو روی همین دستگاه ذخیره می‌شود."
+    );
+  }
+);
+
+/* Voice input */
+
+voiceBtn.addEventListener(
+  "click",
+  () => {
+
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+
+      alert(
+        "تشخیص صدا در این مرورگر در دسترس نیست."
+      );
+
+      return;
+    }
+
+    const recognition =
+      new SpeechRecognition();
+
+    recognition.lang = "fa-IR";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    voiceBtn.textContent =
+      "🔴 گوش می‌دهم...";
+
+    recognition.start();
+
+    recognition.onresult =
+      event => {
+
+        input.value =
+          event.results[0][0].transcript;
+
+        input.dispatchEvent(
+          new Event("input")
+        );
+      };
+
+    recognition.onerror =
+      () => {
+
+        voiceBtn.textContent =
+          "🎙️ صدا";
+      };
+
+    recognition.onend =
+      () => {
+
+        voiceBtn.textContent =
+          "🎙️ صدا";
+      };
+  }
+);
+
+</script>
+
+</body>
+</html>
